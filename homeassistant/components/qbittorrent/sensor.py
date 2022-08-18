@@ -6,7 +6,6 @@ import logging
 from qbittorrent.client import LoginRequired
 from requests.exceptions import RequestException
 import voluptuous as vol
-from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from homeassistant.components.sensor import (
     PLATFORM_SCHEMA,
@@ -24,6 +23,7 @@ from homeassistant.const import (
 )
 from homeassistant.core import HomeAssistant
 import homeassistant.helpers.config_validation as cv
+from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .client import get_main_data_client
 from .const import (
