@@ -1,4 +1,6 @@
 """The tests for the Google Assistant component."""
+from http import HTTPStatus
+
 # pylint: disable=protected-access
 import json
 
@@ -19,6 +21,8 @@ from homeassistant.components import (
 from homeassistant.components.climate import const as climate
 from homeassistant.components.humidifier import const as humidifier
 from homeassistant.const import CLOUD_NEVER_EXPOSED_ENTITIES
+from homeassistant.helpers import entity_registry as er
+from homeassistant.helpers.entity import EntityCategory
 
 from . import DEMO_DEVICES
 
@@ -133,19 +137,35 @@ async def test_sync_request(hass_fixture, assistant_client, auth_header):
         "test",
         "switch_config_id",
         suggested_object_id="config_switch",
-        entity_category="config",
+        entity_category=EntityCategory.CONFIG,
     )
     entity_entry2 = entity_registry.async_get_or_create(
         "switch",
         "test",
         "switch_diagnostic_id",
         suggested_object_id="diagnostic_switch",
-        entity_category="diagnostic",
+        entity_category=EntityCategory.DIAGNOSTIC,
+    )
+    entity_entry3 = entity_registry.async_get_or_create(
+        "switch",
+        "test",
+        "switch_hidden_integration_id",
+        suggested_object_id="hidden_integration_switch",
+        hidden_by=er.RegistryEntryHider.INTEGRATION,
+    )
+    entity_entry4 = entity_registry.async_get_or_create(
+        "switch",
+        "test",
+        "switch_hidden_user_id",
+        suggested_object_id="hidden_user_switch",
+        hidden_by=er.RegistryEntryHider.USER,
     )
 
     # These should not show up in the sync request
     hass_fixture.states.async_set(entity_entry1.entity_id, "on")
     hass_fixture.states.async_set(entity_entry2.entity_id, "something_else")
+    hass_fixture.states.async_set(entity_entry3.entity_id, "blah")
+    hass_fixture.states.async_set(entity_entry4.entity_id, "foo")
 
     reqid = "5711642932632160983"
     data = {"requestId": reqid, "inputs": [{"intent": "action.devices.SYNC"}]}
@@ -154,7 +174,7 @@ async def test_sync_request(hass_fixture, assistant_client, auth_header):
         data=json.dumps(data),
         headers=auth_header,
     )
-    assert result.status == 200
+    assert result.status == HTTPStatus.OK
     body = await result.json()
     assert body.get("requestId") == reqid
     devices = body["payload"]["devices"]
@@ -198,14 +218,14 @@ async def test_query_request(hass_fixture, assistant_client, auth_header):
         data=json.dumps(data),
         headers=auth_header,
     )
-    assert result.status == 200
+    assert result.status == HTTPStatus.OK
     body = await result.json()
     assert body.get("requestId") == reqid
     devices = body["payload"]["devices"]
     assert len(devices) == 4
     assert devices["light.bed_light"]["on"] is False
     assert devices["light.ceiling_lights"]["on"] is True
-    assert devices["light.ceiling_lights"]["brightness"] == 70
+    assert devices["light.ceiling_lights"]["brightness"] == 71
     assert devices["light.ceiling_lights"]["color"]["temperatureK"] == 2631
     assert devices["light.kitchen_lights"]["color"]["spectrumHsv"] == {
         "hue": 345,
@@ -238,7 +258,7 @@ async def test_query_climate_request(hass_fixture, assistant_client, auth_header
         data=json.dumps(data),
         headers=auth_header,
     )
-    assert result.status == 200
+    assert result.status == HTTPStatus.OK
     body = await result.json()
     assert body.get("requestId") == reqid
     devices = body["payload"]["devices"]
@@ -297,7 +317,7 @@ async def test_query_climate_request_f(hass_fixture, assistant_client, auth_head
         data=json.dumps(data),
         headers=auth_header,
     )
-    assert result.status == 200
+    assert result.status == HTTPStatus.OK
     body = await result.json()
     assert body.get("requestId") == reqid
     devices = body["payload"]["devices"]
@@ -350,7 +370,7 @@ async def test_query_humidifier_request(hass_fixture, assistant_client, auth_hea
         data=json.dumps(data),
         headers=auth_header,
     )
-    assert result.status == 200
+    assert result.status == HTTPStatus.OK
     body = await result.json()
     assert body.get("requestId") == reqid
     devices = body["payload"]["devices"]
@@ -464,7 +484,7 @@ async def test_execute_request(hass_fixture, assistant_client, auth_header):
         data=json.dumps(data),
         headers=auth_header,
     )
-    assert result.status == 200
+    assert result.status == HTTPStatus.OK
     body = await result.json()
     assert body.get("requestId") == reqid
     commands = body["payload"]["commands"]
