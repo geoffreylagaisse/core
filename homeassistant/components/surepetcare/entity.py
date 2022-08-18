@@ -13,7 +13,7 @@ from . import SurePetcareDataCoordinator
 from .const import DOMAIN
 
 
-class SurePetcareEntity(CoordinatorEntity):
+class SurePetcareEntity(CoordinatorEntity[SurePetcareDataCoordinator]):
     """An implementation for Sure Petcare Entities."""
 
     def __init__(
@@ -35,6 +35,7 @@ class SurePetcareEntity(CoordinatorEntity):
 
         self._device_id = f"{surepy_entity.household_id}-{surepetcare_id}"
         self._attr_device_info = DeviceInfo(
+            configuration_url="https://surepetcare.io/dashboard/",
             identifiers={(DOMAIN, self._device_id)},
             name=self._device_name,
             manufacturer="Sure Petcare",

@@ -12,13 +12,15 @@ from homeassistant.const import (
     STATE_UNAVAILABLE,
     STATE_UNKNOWN,
 )
-from homeassistant.core import HassJob, callback
+from homeassistant.core import CALLBACK_TYPE, HassJob, HomeAssistant, callback
 from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.event import (
     async_track_point_in_time,
     async_track_state_change_event,
     async_track_time_change,
 )
+from homeassistant.helpers.trigger import TriggerActionType, TriggerInfo
+from homeassistant.helpers.typing import ConfigType
 import homeassistant.util.dt as dt_util
 
 # mypy: allow-untyped-defs, no-check-untyped-defs
@@ -37,10 +39,15 @@ TRIGGER_SCHEMA = cv.TRIGGER_BASE_SCHEMA.extend(
 )
 
 
-async def async_attach_trigger(hass, config, action, automation_info):
+async def async_attach_trigger(
+    hass: HomeAssistant,
+    config: ConfigType,
+    action: TriggerActionType,
+    trigger_info: TriggerInfo,
+) -> CALLBACK_TYPE:
     """Listen for state changes based on configuration."""
-    trigger_data = automation_info["trigger_data"]
-    entities = {}
+    trigger_data = trigger_info["trigger_data"]
+    entities: dict[str, CALLBACK_TYPE] = {}
     removes = []
     job = HassJob(action)
 
@@ -69,8 +76,7 @@ async def async_attach_trigger(hass, config, action, automation_info):
     def update_entity_trigger(entity_id, new_state=None):
         """Update the entity trigger for the entity_id."""
         # If a listener was already set up for entity, remove it.
-        remove = entities.pop(entity_id, None)
-        if remove:
+        if remove := entities.pop(entity_id, None):
             remove()
             remove = None
 
@@ -129,7 +135,7 @@ async def async_attach_trigger(hass, config, action, automation_info):
         elif (
             new_state.domain == "sensor"
             and new_state.attributes.get(ATTR_DEVICE_CLASS)
-            == sensor.DEVICE_CLASS_TIMESTAMP
+            == sensor.SensorDeviceClass.TIMESTAMP
             and new_state.state not in (STATE_UNAVAILABLE, STATE_UNKNOWN)
         ):
             trigger_dt = dt_util.parse_datetime(new_state.state)

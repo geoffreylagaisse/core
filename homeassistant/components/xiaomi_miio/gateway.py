@@ -7,7 +7,7 @@ from micloud.micloudexception import MiCloudAccessDenied
 from miio import DeviceException, gateway
 from miio.gateway.gateway import GATEWAY_MODEL_EU
 
-from homeassistant.helpers.entity import Entity
+from homeassistant.helpers.entity import DeviceInfo, Entity
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .const import (
@@ -81,7 +81,7 @@ class ConnectXiaomiGateway:
                 raise AuthException(error) from error
 
             raise SetupException(
-                "DeviceException during setup of xiaomi gateway with host {self._host}"
+                f"DeviceException during setup of xiaomi gateway with host {self._host}"
             ) from error
 
         # get the connected sub devices
@@ -115,7 +115,7 @@ class ConnectXiaomiGateway:
                 if not miio_cloud.login():
                     raise SetupException(
                         "Failed to login to Xiaomi Miio Cloud during setup of Xiaomi"
-                        " gateway with host {self._host}",
+                        f" gateway with host {self._host}",
                     )
                 devices_raw = miio_cloud.get_devices(self._cloud_country)
                 self._gateway_device.get_devices_from_dict(devices_raw)
@@ -151,16 +151,17 @@ class XiaomiGatewayDevice(CoordinatorEntity, Entity):
         return self._name
 
     @property
-    def device_info(self):
+    def device_info(self) -> DeviceInfo:
         """Return the device info of the gateway."""
-        return {
-            "identifiers": {(DOMAIN, self._sub_device.sid)},
-            "via_device": (DOMAIN, self._entry.unique_id),
-            "manufacturer": "Xiaomi",
-            "name": self._sub_device.name,
-            "model": self._sub_device.model,
-            "sw_version": self._sub_device.firmware_version,
-        }
+        return DeviceInfo(
+            identifiers={(DOMAIN, self._sub_device.sid)},
+            via_device=(DOMAIN, self._entry.unique_id),
+            manufacturer="Xiaomi",
+            name=self._sub_device.name,
+            model=self._sub_device.model,
+            sw_version=self._sub_device.firmware_version,
+            hw_version=self._sub_device.zigbee_model,
+        )
 
     @property
     def available(self):
@@ -168,4 +169,4 @@ class XiaomiGatewayDevice(CoordinatorEntity, Entity):
         if self.coordinator.data is None:
             return False
 
-        return self.coordinator.data[self._sub_device.sid][ATTR_AVAILABLE]
+        return self.coordinator.data[ATTR_AVAILABLE]
