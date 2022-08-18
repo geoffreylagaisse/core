@@ -6,12 +6,14 @@ import logging
 from qbittorrent.client import LoginRequired
 from requests.exceptions import RequestException
 import voluptuous as vol
+from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from homeassistant.components.sensor import (
     PLATFORM_SCHEMA,
     SensorEntity,
     SensorEntityDescription,
 )
+from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import (
     CONF_NAME,
     CONF_PASSWORD,
@@ -20,6 +22,7 @@ from homeassistant.const import (
     DATA_RATE_KIBIBYTES_PER_SECOND,
     STATE_IDLE,
 )
+from homeassistant.core import HomeAssistant
 import homeassistant.helpers.config_validation as cv
 
 from .client import get_main_data_client
@@ -60,10 +63,12 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(
 )
 
 
-async def async_setup_entry(hass, entry, async_add_entities):
+async def async_setup_entry(
+    hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback
+) -> None:
     """Set up the qBittorrent sensor."""
 
-    qbit_data = hass.data[DOMAIN][entry.data[CONF_URL]]
+    qbit_data = hass.data[DOMAIN][entry.entry_id]
     name = qbit_data[DATA_KEY_NAME]
     sensors = [
         QBittorrentSensor(
@@ -104,14 +109,14 @@ class QBittorrentSensor(SensorEntity):
         self._attr_available = False
 
     @property
-    def name(self):
+    def name(self) -> str:
         """Return the name of the sensor."""
         return f"{self._attr_name}"
 
     @property
-    def unique_id(self):
+    def unique_id(self) -> str:
         """Return the unique id of the sensor."""
-        return f"{self._server_unique_id}/{self._attr_name}"
+        return f"{self._server_unique_id}"
 
     @property
     def state(self):
@@ -143,7 +148,7 @@ class QBittorrentSensor(SensorEntity):
             "manufacturer": DOMAIN,
         }
 
-    async def async_update(self):
+    async def async_update(self) -> None:
         """Get the latest data from qBittorrent and updates the state."""
         try:
             data = await self.hass.async_add_executor_job(
@@ -155,7 +160,7 @@ class QBittorrentSensor(SensorEntity):
             self._attr_available = True
         except RequestException:
             if self._attr_available:
-                _LOGGER.error("Connection lost")
+                _LOGGER.warning("Connection lost")
                 self._attr_available = False
         except self._exception:
             _LOGGER.error("Invalid authentication")

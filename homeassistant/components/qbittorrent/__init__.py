@@ -6,7 +6,7 @@ from qbittorrent.client import LoginRequired
 from requests.exceptions import RequestException
 
 from homeassistant.config_entries import SOURCE_IMPORT, ConfigEntry
-from homeassistant.const import CONF_PASSWORD, CONF_URL, CONF_USERNAME
+from homeassistant.const import CONF_PASSWORD, CONF_URL, CONF_USERNAME, Platform
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ConfigEntryNotReady
 from homeassistant.helpers import config_per_platform
@@ -14,7 +14,7 @@ from homeassistant.helpers import config_per_platform
 from .client import create_client
 from .const import DATA_KEY_CLIENT, DATA_KEY_NAME, DOMAIN
 
-PLATFORMS = ["sensor"]
+PLATFORMS = [Platform.SENSOR]
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -40,7 +40,7 @@ async def async_setup(hass: HomeAssistant, config: dict):
     return True
 
 
-async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
+async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up Qbittorrent from a config entry."""
     name = "Qbittorrent"
     try:
@@ -55,10 +55,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
         return False
 
     except RequestException as err:
-        _LOGGER.error("Connection failed")
-        raise ConfigEntryNotReady from err
+        raise ConfigEntryNotReady("Connection failed") from err
 
-    hass.data[DOMAIN][entry.data[CONF_URL]] = {
+    hass.data[DOMAIN][entry.entry_id] = {
         DATA_KEY_CLIENT: client,
         DATA_KEY_NAME: name,
     }
@@ -70,7 +69,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
     return True
 
 
-async def async_unload_entry(hass: HomeAssistant, config_entry: ConfigEntry):
+async def async_unload_entry(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
     """Unload Qbittorrent Entry from config_entry."""
 
     unload_ok = all(
