@@ -7,6 +7,7 @@ import voluptuous as vol
 
 from homeassistant import config_entries
 from homeassistant.const import CONF_PASSWORD, CONF_URL, CONF_USERNAME
+from homeassistant.data_entry_flow import FlowResult
 
 from .client import create_client
 from .const import DOMAIN  # pylint:disable=unused-import
@@ -44,7 +45,7 @@ class QBittorrentConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         self._data = None
         self._title = None
 
-    async def async_step_import(self, device_config):
+    async def async_step_import(self, device_config) -> FlowResult:
         """Import a configuration.yaml config."""
         data = {}
 
@@ -60,7 +61,7 @@ class QBittorrentConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         return self.async_abort(reason=errors["base"])
 
-    async def async_step_import_confirm(self, user_input=None):
+    async def async_step_import_confirm(self, user_input=None) -> FlowResult:
         """Confirm the user wants to import the config entry."""
         if user_input is None:
             return self.async_show_form(
@@ -80,7 +81,7 @@ class QBittorrentConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             },
         )
 
-    async def async_step_user(self, user_input=None):
+    async def async_step_user(self, user_input=None) -> FlowResult:
         """Handle the initial step."""
         errors = {}
         if user_input is not None:
