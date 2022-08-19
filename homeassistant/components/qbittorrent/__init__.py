@@ -10,6 +10,7 @@ from homeassistant.const import CONF_PASSWORD, CONF_URL, CONF_USERNAME, Platform
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ConfigEntryNotReady
 from homeassistant.helpers import config_per_platform
+from homeassistant.helpers.typing import ConfigType
 
 from .client import create_client
 from .const import DATA_KEY_CLIENT, DATA_KEY_NAME, DOMAIN
@@ -19,7 +20,7 @@ PLATFORMS = [Platform.SENSOR]
 _LOGGER = logging.getLogger(__name__)
 
 
-async def async_setup(hass: HomeAssistant, config: dict):
+async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     """Set up the Qbittorrent component."""
     hass.data.setdefault(DOMAIN, {})
 
