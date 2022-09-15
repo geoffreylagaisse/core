@@ -106,6 +106,7 @@ class QBittorrentSensor(SensorEntity):
         self._exception = exception
         self._server_unique_id = server_unique_id
         self._attr_name = f"{client_name} {description.name}"
+        self._attr_unique_id = f"{self._server_unique_id}_{description.key}"
         self._attr_available = False
 
     @property
@@ -114,17 +115,12 @@ class QBittorrentSensor(SensorEntity):
         return f"{self._attr_name}"
 
     @property
-    def unique_id(self) -> str:
-        """Return the unique id of the sensor."""
-        return f"{self._server_unique_id}"
-
-    @property
     def state(self):
         """Return the state of the sensor."""
         return self._attr_native_value
 
     @property
-    def available(self):
+    def available(self) -> bool:
         """Return true if device is available."""
         return self._attr_available
 
