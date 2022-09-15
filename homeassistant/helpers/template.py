@@ -23,6 +23,7 @@ from typing import Any, NoReturn, TypeVar, cast, overload
 from urllib.parse import urlencode as urllib_urlencode
 import weakref
 
+from awesomeversion import AwesomeVersion
 import jinja2
 from jinja2 import pass_context, pass_environment
 from jinja2.sandbox import ImmutableSandboxedEnvironment
@@ -198,8 +199,6 @@ class TupleWrapper(tuple, ResultWrapper):
     def __new__(cls, value: tuple, *, render_result: str | None = None) -> TupleWrapper:
         """Create a new tuple class."""
         return super().__new__(cls, tuple(value))
-
-    # pylint: disable=super-init-not-called
 
     def __init__(self, value: tuple, *, render_result: str | None = None) -> None:
         """Initialize a new tuple class."""
@@ -1531,6 +1530,11 @@ def arc_tangent2(*args, default=_SENTINEL):
         return default
 
 
+def version(value):
+    """Filter and function to get version object of the value."""
+    return AwesomeVersion(value)
+
+
 def square_root(value, default=_SENTINEL):
     """Filter and function to get square root of the value."""
     try:
@@ -2003,6 +2007,7 @@ class TemplateEnvironment(ImmutableSandboxedEnvironment):
         self.filters["slugify"] = slugify
         self.filters["iif"] = iif
         self.filters["bool"] = forgiving_boolean
+        self.filters["version"] = version
         self.globals["log"] = logarithm
         self.globals["sin"] = sine
         self.globals["cos"] = cosine
@@ -2035,6 +2040,7 @@ class TemplateEnvironment(ImmutableSandboxedEnvironment):
         self.globals["slugify"] = slugify
         self.globals["iif"] = iif
         self.globals["bool"] = forgiving_boolean
+        self.globals["version"] = version
         self.tests["is_number"] = is_number
         self.tests["match"] = regex_match
         self.tests["search"] = regex_search

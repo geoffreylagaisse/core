@@ -9,7 +9,7 @@ from typing import Any
 
 from regenmaschine import Client
 from regenmaschine.controller import Controller
-from regenmaschine.errors import RainMachineError
+from regenmaschine.errors import RainMachineError, UnknownAPICallError
 import voluptuous as vol
 
 from homeassistant.config_entries import ConfigEntry, ConfigEntryState
@@ -159,11 +159,15 @@ def async_get_controller_for_service_call(
     device_id = call.data[CONF_DEVICE_ID]
     device_registry = dr.async_get(hass)
 
-    if device_entry := device_registry.async_get(device_id):
-        for entry in hass.config_entries.async_entries(DOMAIN):
-            if entry.entry_id in device_entry.config_entries:
-                data: RainMachineData = hass.data[DOMAIN][entry.entry_id]
-                return data.controller
+    if (device_entry := device_registry.async_get(device_id)) is None:
+        raise ValueError(f"Invalid RainMachine device ID: {device_id}")
+
+    for entry_id in device_entry.config_entries:
+        if (entry := hass.config_entries.async_get_entry(entry_id)) is None:
+            continue
+        if entry.domain == DOMAIN:
+            data: RainMachineData = hass.data[DOMAIN][entry_id]
+            return data.controller
 
     raise ValueError(f"No controller for device ID: {device_id}")
 
@@ -186,7 +190,9 @@ async def async_update_programs_and_zones(
     )
 
 
-async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
+async def async_setup_entry(  # noqa: C901
+    hass: HomeAssistant, entry: ConfigEntry
+) -> bool:
     """Set up RainMachine as config entry."""
     websession = aiohttp_client.async_get_clientsession(hass)
     client = Client(session=websession)
@@ -240,6 +246,12 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
                 data = await controller.restrictions.universal()
             else:
                 data = await controller.zones.all(details=True, include_inactive=True)
+        except UnknownAPICallError:
+            LOGGER.info(
+                "Skipping unsupported API call for controller %s: %s",
+                controller.name,
+                api_category,
+            )
         except RainMachineError as err:
             raise UpdateFailed(err) from err
 

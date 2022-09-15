@@ -9,9 +9,11 @@ from homeassistant.components import (
     binary_sensor,
     button,
     camera,
+    climate,
     cover,
     fan,
     group,
+    humidifier,
     input_boolean,
     input_button,
     input_select,
@@ -25,10 +27,8 @@ from homeassistant.components import (
     switch,
     vacuum,
 )
-from homeassistant.components.climate import const as climate
-from homeassistant.components.humidifier import const as humidifier
 from homeassistant.components.lock import STATE_JAMMED, STATE_UNLOCKING
-from homeassistant.components.media_player.const import MEDIA_TYPE_CHANNEL
+from homeassistant.components.media_player import MediaType
 from homeassistant.const import (
     ATTR_ASSUMED_STATE,
     ATTR_BATTERY_LEVEL,
@@ -1397,7 +1397,9 @@ class FanSpeedTrait(_Trait):
         if state.domain == fan.DOMAIN:
             speed_count = min(
                 FAN_SPEED_MAX_SPEED_COUNT,
-                round(100 / self.state.attributes.get(fan.ATTR_PERCENTAGE_STEP) or 1.0),
+                round(
+                    100 / (self.state.attributes.get(fan.ATTR_PERCENTAGE_STEP) or 1.0)
+                ),
             )
             self._ordered_speed = [
                 f"{speed}/{speed_count}" for speed in range(1, speed_count + 1)
@@ -2345,7 +2347,7 @@ class ChannelTrait(_Trait):
             {
                 ATTR_ENTITY_ID: self.state.entity_id,
                 media_player.ATTR_MEDIA_CONTENT_ID: channel_number,
-                media_player.ATTR_MEDIA_CONTENT_TYPE: MEDIA_TYPE_CHANNEL,
+                media_player.ATTR_MEDIA_CONTENT_TYPE: MediaType.CHANNEL,
             },
             blocking=not self.config.should_report_state,
             context=data.context,

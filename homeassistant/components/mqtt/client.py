@@ -309,7 +309,7 @@ class MQTT:
 
     def __init__(
         self,
-        hass: HomeAssistant,
+        hass,
         config_entry,
         conf,
     ) -> None:
@@ -392,7 +392,8 @@ class MQTT:
                 self._mqttc.publish, topic, payload, qos, retain
             )
             _LOGGER.debug(
-                "Transmitting message on %s: '%s', mid: %s",
+                "Transmitting%s message on %s: '%s', mid: %s",
+                " retained" if retain else "",
                 topic,
                 payload,
                 msg_info.mid,
@@ -435,12 +436,13 @@ class MQTT:
             """Return False if there are unprocessed ACKs."""
             return not bool(self._pending_operations)
 
-        # wait for ACK-s to be processesed (unsubscribe only)
+        # wait for ACKs to be processed
         async with self._pending_operations_condition:
             await self._pending_operations_condition.wait_for(no_more_acks)
 
         # stop the MQTT loop
-        await self.hass.async_add_executor_job(stop)
+        async with self._paho_lock:
+            await self.hass.async_add_executor_job(stop)
 
     async def async_subscribe(
         self,
@@ -501,7 +503,8 @@ class MQTT:
         async with self._paho_lock:
             mid = await self.hass.async_add_executor_job(_client_unsubscribe, topic)
             await self._register_mid(mid)
-            self.hass.async_create_task(self._wait_for_mid(mid))
+
+        self.hass.async_create_task(self._wait_for_mid(mid))
 
     async def _async_perform_subscriptions(
         self, subscriptions: Iterable[tuple[str, int]]
@@ -608,9 +611,9 @@ class MQTT:
     @callback
     def _mqtt_handle_message(self, msg: MQTTMessage) -> None:
         _LOGGER.debug(
-            "Received message on %s%s: %s",
+            "Received%s message on %s: %s",
+            " retained" if msg.retain else "",
             msg.topic,
-            " (retained)" if msg.retain else "",
             msg.payload[0:8192],
         )
         timestamp = dt_util.utcnow()
